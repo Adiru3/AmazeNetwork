@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMAZING-GATEWAY | Kernel v2.10.x</title>
+    <style>
+        :root {
+            --router-blue: #004a80;
+            --router-bg: #d4d0c8; /* Classic Windows/Router Gray */
+            --menu-side: #4682b4;
+            --led-green: #33ff33;
+            --led-red: #ff0000;
+        }
+
+        body {
+            font-family: "Tahoma", "Verdana", sans-serif;
+            background-color: var(--router-bg);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-size: 12px;
+            overflow: hidden;
+        }
+
+        /* --- Header / Top Bar --- */
+        header {
+            background: linear-gradient(90deg, #000080 0%, #08216b 100%);
+            color: white;
+            padding: 5px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #fff;
+        }
+
+        .system-time { font-family: monospace; }
+
+        /* --- Layout --- */
+        .main-container { display: flex; flex: 1; overflow: hidden; border: 2px solid #808080; margin: 2px; }
+
+        /* --- Sidebar --- */
+        nav {
+            width: 210px;
+            background-color: #b5b5b5;
+            border-right: 2px solid #808080;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-header {
+            background: #808080;
+            color: white;
+            padding: 6px 10px;
+            font-weight: bold;
+            text-shadow: 1px 1px #000;
+        }
+
+        .nav-item {
+            padding: 8px 15px;
+            text-decoration: none;
+            color: #000;
+            border-bottom: 1px solid #999;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .nav-item:hover { background-color: #dfdfdf; cursor: pointer; }
+        .nav-item.active { background-color: #fff; font-weight: bold; }
+
+        /* --- Main Content --- */
+        main {
+            flex: 1;
+            background-color: #fff;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* --- Widgets & Features --- */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        .widget-box {
+            border: 2px solid #808080;
+            background: #f1f1f1;
+            box-shadow: inset 1px 1px #fff;
+        }
+
+        .widget-header {
+            background: #c0c0c0;
+            padding: 4px 8px;
+            font-weight: bold;
+            border-bottom: 1px solid #808080;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .widget-body { padding: 10px; }
+
+        /* --- Network Map --- */
+        .network-map {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 20px 0;
+            background: #e4e4e4;
+            border: 1px inset #fff;
+        }
+
+        .node { text-align: center; position: relative; }
+        .node-icon { font-size: 24px; filter: grayscale(1); }
+        .node.active .node-icon { filter: none; }
+        .line { height: 2px; background: #808080; flex: 1; margin: 0 10px; position: relative; }
+        .pulse {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--led-green);
+            border-radius: 50%;
+            top: -2px;
+            animation: move 2s infinite linear;
+        }
+
+        @keyframes move { 0% { left: 0; } 100% { left: 100%; } }
+
+        /* --- Live Graph --- */
+        canvas#trafficChart {
+            width: 100%;
+            height: 100px;
+            background: #000;
+            border: 1px solid #555;
+        }
+
+        /* --- Buttons --- */
+        .btn-retro {
+            background: #c0c0c0;
+            border: 2px solid;
+            border-color: #fff #808080 #808080 #fff;
+            padding: 4px 12px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .btn-retro:active { border-color: #808080 #fff #fff #808080; }
+
+        .btn-download {
+            background: #ff6600;
+            color: white;
+            font-weight: bold;
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            margin: 10px 0;
+            border: 3px double #fff;
+        }
+
+        /* --- Console --- */
+        .terminal {
+            background: #000;
+            color: var(--led-green);
+            font-family: "Courier New", monospace;
+            padding: 10px;
+            height: 150px;
+            overflow-y: auto;
+            font-size: 11px;
+            border: 2px inset #808080;
+        }
+
+        .status-led {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .on { background: var(--led-green); box-shadow: 0 0 4px var(--led-green); }
+    </style>
+</head>
+<body onclick="playBeep(440, 10)">
+
+    <header>
+        <div><strong>AMAZING-GATEWAY</strong> Administration Interface v2.10-Stable</div>
+        <div class="system-time" id="clock">00:00:00</div>
+    </header>
+
+    <div class="main-container">
+        <nav>
+            <div class="nav-header">MAIN MENU</div>
+            <a class="nav-item active">Status <span>»</span></a>
+            <a class="nav-item" onclick="alert('RESTRICTED: Please install AmazeNetwork Engine')">LAN Setup <span>🔒</span></a>
+            <a class="nav-item" onclick="alert('RESTRICTED: Packet inspection requires Ring 0')">Firewall <span>🔒</span></a>
+            <a class="nav-item" onclick="alert('RESTRICTED: QoS Engine v4.0 is only in Desktop app')">QoS Traffic <span>🔒</span></a>
+            
+            <div class="nav-header" style="margin-top:20px">TOOLS</div>
+            <a href="https://github.com/Adiru3/AmazeNetwork" target="_blank" class="nav-item">Source Code</a>
+            <a class="nav-item" onclick="diagnosticTest()">Run Self-Test</a>
+        </nav>
+
+        <main>
+            <div style="border: 2px solid red; padding: 10px; margin-bottom: 20px; background: #fff8f8;">
+                <b style="color: red;">CRITICAL ADVICE:</b> 
+                The Web-UI is running on <b>Legacy Drivers</b>. To unlock <b>DCA (Direct Cache Access)</b> and <b>0ms Processing</b>,
+                download the desktop kernel optimization by <b>amazingb01 (Adiru)</b>.
+                <a href="https://github.com/Adiru3/AmazeNetwork/releases/download/Latest/AmazeNetwork.exe" class="btn-download">GET CORE UPGRADE (.EXE)</a>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="widget-box">
+                    <div class="widget-header">NETWORK TOPOLOGY <span>[Live]</span></div>
+                    <div class="widget-body">
+                        <div class="network-map">
+                            <div class="node active"><div class="node-icon">💻</div><div>PC</div></div>
+                            <div class="line"><div class="pulse"></div></div>
+                            <div class="node active"><div class="node-icon">📟</div><div>Gateway</div></div>
+                            <div class="line" style="border-style: dashed;"><div class="pulse" style="animation-delay: 1s; background: yellow;"></div></div>
+                            <div class="node"><div class="node-icon">☁️</div><div>Internet</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="widget-box">
+                    <div class="widget-header">REAL-TIME TRAFFIC (Kbps)</div>
+                    <div class="widget-body">
+                        <canvas id="trafficChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title" style="background:#808080; color:white; padding:3px; margin: 15px 0;">KERNEL PARAMETERS</div>
+            <table style="width:100%; border-collapse: collapse; font-size: 11px;">
+                <tr style="background: #eee;">
+                    <td style="border:1px solid #ccc; padding:5px;"><b>Optimization Tag</b></td>
+                    <td style="border:1px solid #ccc; padding:5px;"><b>Status</b></td>
+                    <td style="border:1px solid #ccc; padding:5px;"><b>Value</b></td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ccc; padding:5px;">Nagle's Algorithm (TCP_NODELAY)</td>
+                    <td style="border:1px solid #ccc; padding:5px;"><span class="status-led on"></span> Optimized</td>
+                    <td style="border:1px solid #ccc; padding:5px;">0x01 (Hex)</td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ccc; padding:5px;">Process Priority Mask</td>
+                    <td style="border:1px solid #ccc; padding:5px;"><span class="status-led on"></span> High</td>
+                    <td style="border:1px solid #ccc; padding:5px;">Adiru-Kernel-v2</td>
+                </tr>
+            </table>
+
+            <div class="section-title" style="background:#808080; color:white; padding:3px; margin: 15px 0;">SYSTEM CONSOLE</div>
+            <div class="terminal" id="term">
+                [SYSTEM]: Booting Amazing-Gateway...<br>
+                [INIT]: Loading Ring 0 drivers (Adiru Engine)...<br>
+                [INFO]: Web-access detected. Performance: 40% (Restricted)
+            </div>
+            
+            <div style="margin-top:10px;">
+                <button class="btn-retro" onclick="diagnosticTest()">Force Flush DNS</button>
+                <button class="btn-retro" onclick="appendTerm('Scanning for bottlenecks...')">Deep Scan</button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- Clock ---
+        function updateClock() {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-GB');
+        }
+        setInterval(updateClock, 1000);
+
+        // --- Console Logic ---
+        const term = document.getElementById('term');
+        function appendTerm(msg) {
+            term.innerHTML += `<br>[${new Date().toLocaleTimeString()}]: ${msg}`;
+            term.scrollTop = term.scrollHeight;
+            playBeep(660, 20);
+        }
+
+        function diagnosticTest() {
+            appendTerm("Starting Hardware Diagnostic...");
+            setTimeout(() => appendTerm("CPU Affinity: Optimal (Gaming cores reserved)"), 1000);
+            setTimeout(() => appendTerm("DPC Latency: 12us (Ultra Low)"), 2000);
+            setTimeout(() => appendTerm("Diagnostic Finished. No errors found."), 3000);
+        }
+
+        // --- Sound Effects (Audio Context) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = "square";
+            osc.frequency.value = freq;
+            gain.gain.value = 0.02;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            setTimeout(() => osc.stop(), duration);
+        }
+
+        // --- Live Chart Logic ---
+        const canvas = document.getElementById('trafficChart');
+        const ctx = canvas.getContext('2d');
+        let data = Array(50).fill(0);
+
+        function drawChart() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            const step = canvas.width / 50;
+            data.shift();
+            data.push(Math.random() * 60 + 20);
+
+            for(let i=0; i<50; i++) {
+                const x = i * step;
+                const y = canvas.height - (data[i]);
+                if(i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Grid lines
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 0.5;
+            for(let j=0; j<canvas.height; j+=20) {
+                ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
+            }
+
+            requestAnimationFrame(drawChart);
+        }
+        drawChart();
+
+        // Random events
+        setInterval(() => {
+            if(Math.random() > 0.8) appendTerm("Incoming packet burst detected... Optimized.");
+        }, 10000);
+    </script>
+</body>
+</html>
