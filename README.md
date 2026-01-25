@@ -2,7 +2,7 @@
 
 <img width="355" height="196" alt="image" src="https://github.com/user-attachments/assets/ce216002-82c7-4de6-8d8f-76747a29293e" />
 
-**Amaze Network Engine** is a high-performance system utility written in C#, designed for deep optimization of the Windows network stack and CPU resource management in real-time. It is specifically engineered for gamers and power users looking to minimize latency (ping) and maximize system responsiveness.
+**Amaze Network** is a high-performance system utility written in C#, designed for deep optimization of the Windows network stack and CPU resource management in real-time. It is specifically engineered for gamers and power users looking to minimize latency (ping) and maximize system responsiveness.
 
 ---
 
